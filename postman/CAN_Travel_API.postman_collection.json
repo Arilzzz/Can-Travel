@@ -1,0 +1,717 @@
+{
+	"info": {
+		"_postman_id": "can-travel-collection-v1",
+		"name": "CAN Travel - Bus Ticket Booking API",
+		"description": "Koleksi lengkap API CAN Travel untuk sistem pemesanan tiket bus.\n\n**Setup:**\n1. Set variable `base_url` = `http://127.0.0.1:8765/api`\n2. Login sebagai admin/customer → token otomatis tersimpan ke variable `token`\n3. Semua request sudah menggunakan `{{token}}` secara otomatis\n\n**Akun Dummy:**\n- Admin: admin@cantravel.com / password123\n- Customer: budi@example.com / password123",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "base_url", "value": "http://127.0.0.1:8765/api", "type": "string" },
+		{ "key": "token", "value": "", "type": "string" },
+		{ "key": "booking_id", "value": "1", "type": "string" },
+		{ "key": "schedule_id", "value": "1", "type": "string" },
+		{ "key": "payment_id", "value": "1", "type": "string" }
+	],
+	"item": [
+		{
+			"name": "🔑 Authentication",
+			"item": [
+				{
+					"name": "Register (Customer Baru)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"if (res.success && res.data && res.data.token) {",
+									"    pm.collectionVariables.set('token', res.data.token);",
+									"    console.log('Token tersimpan:', res.data.token.substring(0,20) + '...');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Nama Kamu\",\n    \"email\": \"kamu@example.com\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\"\n}"
+						},
+						"url": { "raw": "{{base_url}}/register", "host": ["{{base_url}}"], "path": ["register"] },
+						"description": "Daftar akun customer baru. Token login otomatis tersimpan ke variable `token`."
+					}
+				},
+				{
+					"name": "Login Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"if (res.success && res.data && res.data.token) {",
+									"    pm.collectionVariables.set('token', res.data.token);",
+									"    console.log('Login sebagai:', res.data.role, '| is_admin:', res.data.is_admin);",
+									"    console.log('Token tersimpan!');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@cantravel.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": { "raw": "{{base_url}}/login", "host": ["{{base_url}}"], "path": ["login"] },
+						"description": "Login sebagai admin. Token otomatis tersimpan. Cek field `is_admin: true` di response."
+					}
+				},
+				{
+					"name": "Login Customer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"if (res.success && res.data && res.data.token) {",
+									"    pm.collectionVariables.set('token', res.data.token);",
+									"    console.log('Login sebagai:', res.data.role, '| is_admin:', res.data.is_admin);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"budi@example.com\",\n    \"password\": \"password123\"\n}"
+						},
+						"url": { "raw": "{{base_url}}/login", "host": ["{{base_url}}"], "path": ["login"] },
+						"description": "Login sebagai customer. Token otomatis tersimpan. Cek field `is_admin: false`."
+					}
+				},
+				{
+					"name": "Profil Saya (GET /user)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{base_url}}/user", "host": ["{{base_url}}"], "path": ["user"] },
+						"description": "Ambil data user yang sedang login."
+					}
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('token', '');",
+									"console.log('Token dihapus dari collection variable.');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{base_url}}/logout", "host": ["{{base_url}}"], "path": ["logout"] },
+						"description": "Logout. Token aktif dihapus dari server & dari collection variable."
+					}
+				}
+			]
+		},
+		{
+			"name": "🏙️ Kota (Customer)",
+			"item": [
+				{
+					"name": "Daftar Semua Kota",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{base_url}}/cities", "host": ["{{base_url}}"], "path": ["cities"] },
+						"description": "Tampilkan semua kota. Gunakan ID kota untuk pencarian jadwal."
+					}
+				}
+			]
+		},
+		{
+			"name": "🚌 Bus (Customer)",
+			"item": [
+				{
+					"name": "Daftar Bus Aktif",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{base_url}}/buses", "host": ["{{base_url}}"], "path": ["buses"] },
+						"description": "Tampilkan daftar bus yang statusnya aktif."
+					}
+				}
+			]
+		},
+		{
+			"name": "📅 Jadwal (Customer)",
+			"item": [
+				{
+					"name": "Cari Jadwal (Semua)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/schedules",
+							"host": ["{{base_url}}"],
+							"path": ["schedules"]
+						},
+						"description": "Tampilkan semua jadwal yang tersedia (status: scheduled)."
+					}
+				},
+				{
+					"name": "Cari Jadwal (Filter Kota + Tanggal)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/schedules?origin_city_id=1&destination_city_id=2&date=2026-11-20",
+							"host": ["{{base_url}}"],
+							"path": ["schedules"],
+							"query": [
+								{ "key": "origin_city_id", "value": "1", "description": "ID kota asal (1=Jakarta)" },
+								{ "key": "destination_city_id", "value": "2", "description": "ID kota tujuan (2=Bandung)" },
+								{ "key": "date", "value": "2026-11-20", "description": "Tanggal keberangkatan (YYYY-MM-DD)" }
+							]
+						},
+						"description": "Cari jadwal berdasarkan kota asal, tujuan, dan tanggal.\nSemua parameter opsional, bisa dikombinasi."
+					}
+				},
+				{
+					"name": "Detail Jadwal",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"if (res.success) {",
+									"    pm.collectionVariables.set('schedule_id', res.data.id);",
+									"    console.log('schedule_id tersimpan:', res.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/schedules/{{schedule_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["schedules", "{{schedule_id}}"]
+						},
+						"description": "Detail satu jadwal. Ganti `schedule_id` di variable collection."
+					}
+				},
+				{
+					"name": "Lihat Kursi Tersedia",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/schedules/{{schedule_id}}/seats",
+							"host": ["{{base_url}}"],
+							"path": ["schedules", "{{schedule_id}}", "seats"]
+						},
+						"description": "Lihat semua kursi dan statusnya (available/booked).\nCatat `schedule_seat_id` yang statusnya `available` untuk dipakai saat booking!"
+					}
+				}
+			]
+		},
+		{
+			"name": "🎫 Booking (Customer)",
+			"item": [
+				{
+					"name": "Buat Pemesanan Tiket",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"if (res.success && res.data) {",
+									"    pm.collectionVariables.set('booking_id', res.data.id);",
+									"    console.log('Booking berhasil!');",
+									"    console.log('booking_id:', res.data.id);",
+									"    console.log('booking_code:', res.data.booking_code);",
+									"    console.log('total_price:', res.data.total_price);",
+									"    console.log('status:', res.data.status);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"schedule_id\": 1,\n    \"passengers\": [\n        {\n            \"name\": \"Nama Penumpang 1\",\n            \"phone\": \"081234567890\",\n            \"schedule_seat_id\": 5\n        },\n        {\n            \"name\": \"Nama Penumpang 2\",\n            \"phone\": \"089876543210\",\n            \"schedule_seat_id\": 6\n        }\n    ]\n}"
+						},
+						"url": { "raw": "{{base_url}}/bookings", "host": ["{{base_url}}"], "path": ["bookings"] },
+						"description": "Pesan tiket bus.\n\n⚠️ Penting:\n- `schedule_id` → dari response GET /schedules\n- `schedule_seat_id` → dari GET /schedules/{id}/seats, pilih yang statusnya `available`\n- Bisa pesan 1 atau lebih penumpang sekaligus\n\nSetelah berhasil, `booking_id` otomatis tersimpan ke collection variable."
+					}
+				},
+				{
+					"name": "Riwayat Pemesanan Saya",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{base_url}}/bookings", "host": ["{{base_url}}"], "path": ["bookings"] },
+						"description": "Tampilkan semua booking milik user yang sedang login."
+					}
+				},
+				{
+					"name": "Detail Pemesanan",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/bookings/{{booking_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["bookings", "{{booking_id}}"]
+						},
+						"description": "Detail satu booking lengkap dengan data penumpang dan kursi."
+					}
+				},
+				{
+					"name": "Batalkan Pemesanan",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/bookings/{{booking_id}}/cancel",
+							"host": ["{{base_url}}"],
+							"path": ["bookings", "{{booking_id}}", "cancel"]
+						},
+						"description": "Batalkan booking. Hanya booking berstatus `pending` yang bisa dibatalkan.\nSetelah dibatalkan, kursi otomatis kembali `available`."
+					}
+				}
+			]
+		},
+		{
+			"name": "💳 Pembayaran (Customer)",
+			"item": [
+				{
+					"name": "Bayar Tiket (Simulasi)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var res = pm.response.json();",
+									"if (res.success && res.data) {",
+									"    pm.collectionVariables.set('payment_id', res.data.id);",
+									"    console.log('Pembayaran berhasil!');",
+									"    console.log('payment_id:', res.data.id);",
+									"    console.log('status:', res.data.status);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"booking_id\": {{booking_id}},\n    \"payment_method\": \"transfer\",\n    \"amount\": 300000\n}"
+						},
+						"url": { "raw": "{{base_url}}/payments", "host": ["{{base_url}}"], "path": ["payments"] },
+						"description": "Simulasi pembayaran.\n\nMetode yang valid: `transfer`, `cash`, `qris`, `ovo`, `gopay`\n\nAturan:\n- Jika `amount` < `total_price` → status `failed`\n- Jika `amount` >= `total_price` → status `paid`, booking otomatis jadi `paid`\n\nIsi `amount` sesuai `total_price` dari booking."
+					}
+				},
+				{
+					"name": "Detail Pembayaran",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/payments/{{payment_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["payments", "{{payment_id}}"]
+						},
+						"description": "Detail satu pembayaran."
+					}
+				}
+			]
+		},
+		{
+			"name": "🔧 Admin - Bus",
+			"item": [
+				{
+					"name": "Daftar Semua Bus (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{base_url}}/admin/buses", "host": ["{{base_url}}"], "path": ["admin", "buses"] },
+						"description": "Admin: tampilkan semua bus (aktif dan nonaktif)."
+					}
+				},
+				{
+					"name": "Tambah Bus Baru (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"bus_name\": \"Nama Bus Baru\",\n    \"plate_number\": \"B 1111 XY\",\n    \"type\": \"Executive\",\n    \"capacity\": 40,\n    \"status\": \"active\"\n}"
+						},
+						"url": { "raw": "{{base_url}}/admin/buses", "host": ["{{base_url}}"], "path": ["admin", "buses"] },
+						"description": "Tambah bus baru. Kursi (seats) otomatis dibuat sesuai `capacity`.\n\nType valid: `Executive`, `Ekonomi`, `Sleeper`\nStatus valid: `active`, `inactive`"
+					}
+				},
+				{
+					"name": "Update Bus (Admin)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"bus_name\": \"Nama Bus Diupdate\",\n    \"plate_number\": \"B 1111 XY\",\n    \"type\": \"Ekonomi\",\n    \"capacity\": 40,\n    \"status\": \"active\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/buses/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "buses", "1"]
+						},
+						"description": "Update data bus. Ganti angka `1` di URL dengan ID bus yang ingin diedit."
+					}
+				},
+				{
+					"name": "Hapus Bus (Admin)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/buses/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "buses", "1"]
+						},
+						"description": "Hapus bus. Ganti angka `1` dengan ID bus."
+					}
+				}
+			]
+		},
+		{
+			"name": "🏙️ Admin - Kota",
+			"item": [
+				{
+					"name": "Tambah Kota (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Cirebon\",\n    \"province\": \"Jawa Barat\"\n}"
+						},
+						"url": { "raw": "{{base_url}}/admin/cities", "host": ["{{base_url}}"], "path": ["admin", "cities"] }
+					}
+				},
+				{
+					"name": "Update Kota (Admin)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Cirebon Edit\",\n    \"province\": \"Jawa Barat\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/cities/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "cities", "1"]
+						}
+					}
+				},
+				{
+					"name": "Hapus Kota (Admin)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/cities/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "cities", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🗺️ Admin - Rute",
+			"item": [
+				{
+					"name": "Daftar Semua Rute (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{base_url}}/admin/routes", "host": ["{{base_url}}"], "path": ["admin", "routes"] }
+					}
+				},
+				{
+					"name": "Tambah Rute (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"origin_city_id\": 1,\n    \"destination_city_id\": 3\n}"
+						},
+						"url": { "raw": "{{base_url}}/admin/routes", "host": ["{{base_url}}"], "path": ["admin", "routes"] },
+						"description": "Tambah rute baru. `origin_city_id` dan `destination_city_id` harus berbeda."
+					}
+				},
+				{
+					"name": "Update Rute (Admin)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"origin_city_id\": 1,\n    \"destination_city_id\": 4\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/routes/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "routes", "1"]
+						}
+					}
+				},
+				{
+					"name": "Hapus Rute (Admin)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/routes/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "routes", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📅 Admin - Jadwal",
+			"item": [
+				{
+					"name": "Daftar Semua Jadwal (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{base_url}}/admin/schedules", "host": ["{{base_url}}"], "path": ["admin", "schedules"] }
+					}
+				},
+				{
+					"name": "Tambah Jadwal (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"bus_id\": 1,\n    \"route_id\": 1,\n    \"departure_time\": \"2026-12-01 08:00:00\",\n    \"arrival_time\": \"2026-12-01 12:00:00\",\n    \"price\": 150000,\n    \"status\": \"scheduled\"\n}"
+						},
+						"url": { "raw": "{{base_url}}/admin/schedules", "host": ["{{base_url}}"], "path": ["admin", "schedules"] },
+						"description": "Tambah jadwal baru. Schedule_seats (kursi per jadwal) otomatis dibuat!\n\nStatus valid: `scheduled`, `completed`, `cancelled`\n`arrival_time` harus setelah `departure_time`"
+					}
+				},
+				{
+					"name": "Update Jadwal (Admin)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"bus_id\": 1,\n    \"route_id\": 1,\n    \"departure_time\": \"2026-12-01 09:00:00\",\n    \"arrival_time\": \"2026-12-01 13:00:00\",\n    \"price\": 160000,\n    \"status\": \"scheduled\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/schedules/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "schedules", "1"]
+						}
+					}
+				},
+				{
+					"name": "Hapus Jadwal (Admin)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/schedules/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "schedules", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📋 Admin - Booking",
+			"item": [
+				{
+					"name": "Semua Transaksi (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"url": { "raw": "{{base_url}}/admin/bookings", "host": ["{{base_url}}"], "path": ["admin", "bookings"] },
+						"description": "Admin melihat SEMUA transaksi dari semua user."
+					}
+				},
+				{
+					"name": "Update Status Booking (Admin)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Accept", "value": "application/json" },
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"paid\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/bookings/{{booking_id}}/status",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "bookings", "{{booking_id}}", "status"]
+						},
+						"description": "Admin update status booking.\n\nStatus valid: `pending`, `paid`, `cancelled`, `expired`"
+					}
+				}
+			]
+		}
+	]
+}
+
